@@ -1,0 +1,13 @@
+{
+    "port": 4000,
+    "routes": [
+        {
+            "prefix": "/api/products",
+            "target": "http://localhost:5001/products"
+        },
+        {
+            "prefix": "/api/users",
+            "target": "http://localhost:5002/users"
+        }
+    ]
+}
