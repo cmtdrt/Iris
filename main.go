@@ -15,5 +15,5 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	fmt.Println(cfg)
+	fmt.Println(cfg.String())
 }
