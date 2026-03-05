@@ -1,11 +1,9 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
 
 	"iris/src/config"
 	"iris/src/logging"
@@ -16,30 +14,34 @@ import (
 func Start(cfg config.Config) error {
 	addr := fmt.Sprintf(":%d", cfg.Port)
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", handleHealth)
+	mux.HandleFunc("/", gatewayHandler(cfg))
+
+	log.Printf("Starting Iris API gateway on %s\n", addr)
+	return http.ListenAndServe(addr, mux)
+}
+
+// gatewayHandler returns the main handler that routes and proxies incoming requests.
+func gatewayHandler(cfg config.Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		logging.LogRequestReceived(r.Method, r.URL.Path)
 
-		// Health check endpoint.
-		if r.URL.Path == "/health" {
-			w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-			return
-		}
-
-		targetURL := routing.MatchRoute(cfg, r)
-		if targetURL == nil {
+		matched := routing.MatchRoute(cfg, r)
+		if matched == nil {
 			logging.LogRequestNotRedirected(r.URL.Path)
 			http.NotFound(w, r)
 			return
 		}
 
-		logging.LogRequestRedirected(r.URL.Path, targetURL.String())
+		if len(matched.Route.Methods) > 0 && !methodAllowed(matched.Route.Methods, r.Method) {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 
-		proxy := httputil.NewSingleHostReverseProxy(targetURL)
+		logging.LogRequestRedirected(r.URL.Path, matched.TargetURL.String())
+
+		proxy := buildProxy(matched, r)
 		proxy.ServeHTTP(w, r)
-	})
-
-	log.Printf("Starting Iris API gateway on %s\n", addr)
-	return http.ListenAndServe(addr, handler)
+	}
 }

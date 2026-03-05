@@ -7,9 +7,23 @@ import (
 	"strings"
 )
 
+type CORSConfig struct {
+	AllowedOrigins   []string `json:"allowedOrigins,omitempty"`
+	AllowedMethods   []string `json:"allowedMethods,omitempty"`
+	AllowedHeaders   []string `json:"allowedHeaders,omitempty"`
+	ExposedHeaders   []string `json:"exposedHeaders,omitempty"`
+	AllowCredentials bool     `json:"allowCredentials,omitempty"`
+}
+
 type Route struct {
-	Prefix string `json:"prefix"`
-	Target string `json:"target"`
+	Prefix         string            `json:"prefix"`
+	Target         string            `json:"target"`
+	Methods        []string          `json:"methods,omitempty"`
+	ForwardHeaders []string          `json:"forwardHeaders,omitempty"`
+	AddHeaders     map[string]string `json:"addHeaders,omitempty"`
+	TimeoutMs      int               `json:"timeoutMs,omitempty"`
+	RewritePrefix  string            `json:"rewritePrefix,omitempty"`
+	CORS           *CORSConfig       `json:"corsConfig,omitempty"`
 }
 
 type Config struct {
