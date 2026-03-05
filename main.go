@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"iris/src/config"
+	"iris/src/server"
 )
 
 const CONFIG_FILE_NAME = "iris-config.json"
@@ -16,4 +17,8 @@ func main() {
 	}
 
 	fmt.Println(cfg.String())
+
+	if err := server.Start(cfg); err != nil {
+		log.Fatalf("failed to start server: %v", err)
+	}
 }
